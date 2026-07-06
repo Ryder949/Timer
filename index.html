@@ -31,12 +31,24 @@ body{
     border:none;
     color:white;
     font-size:28px;
+    cursor:pointer;
 }
 
 .container{
     display:flex;
     flex-direction:column;
     align-items:center;
+}
+
+#totalTime{
+    font-size:20px;
+    font-weight:600;
+    margin-bottom:15px;
+}
+
+#lapText{
+    margin-top:10px;
+    font-size:20px;
 }
 
 svg{
@@ -57,12 +69,11 @@ svg{
     stroke-linecap:round;
     transform:rotate(-90deg);
     transform-origin:50% 50%;
-    transition:stroke .3s;
 }
 
 .time{
     position:absolute;
-    font-size:60px;
+    font-size:56px;
     font-weight:bold;
 }
 
@@ -81,11 +92,6 @@ svg{
     50%{
         transform:scale(1.05);
     }
-}
-
-.stats{
-    margin-top:-20px;
-    line-height:1.8;
 }
 
 .controls{
@@ -109,7 +115,7 @@ button{
     display:none;
     position:fixed;
     inset:0;
-    background:rgba(0,0,0,.8);
+    background:rgba(0,0,0,.85);
     justify-content:center;
     align-items:center;
 }
@@ -138,7 +144,6 @@ button{
 
 .save{
     background:#22c55e;
-    margin-top:10px;
 }
 
 .close{
@@ -158,14 +163,17 @@ onclick="openSettings()">
 </button>
 
 <button id="installBtn"
-class="icon-btn"
-style="display:none">
+class="icon-btn">
 ⬇️
 </button>
 
 </div>
 
 <div class="container">
+
+<div id="totalTime">
+Total Time: 0 min
+</div>
 
 <div class="ring-container">
 
@@ -175,34 +183,25 @@ style="display:none">
 class="track"
 cx="100"
 cy="100"
-r="85"/>
+r="85"></circle>
 
 <circle
 id="progressRing"
 class="progress"
 cx="100"
 cy="100"
-r="85"/>
+r="85"></circle>
 
 </svg>
 
-<div id="timerText"
-class="time">
+<div id="timerText" class="time">
 05:00
 </div>
 
 </div>
 
-<div class="stats">
-
 <div id="lapText">
 Lap 1
-</div>
-
-<div id="totalTime">
-Total Time: 0 min
-</div>
-
 </div>
 
 <div class="controls">
@@ -237,7 +236,6 @@ class="panel">
 <h2>Settings</h2>
 
 <label>
-
 Interval Length (minutes)
 
 <input
@@ -245,35 +243,34 @@ id="durationInput"
 type="number"
 min="1"
 max="120">
-
 </label>
 
 <label>
 <input
 id="soundToggle"
 type="checkbox">
- Sound
+Sound
 </label>
 
 <label>
 <input
 id="vibrationToggle"
 type="checkbox">
- Vibration
+Vibration
 </label>
 
 <label>
 <input
 id="halfwayToggle"
 type="checkbox">
- Halfway Alert
+Halfway Alert
 </label>
 
 <label>
 <input
 id="countdownToggle"
 type="checkbox">
- Final Countdown
+Final Countdown
 </label>
 
 <button
@@ -318,71 +315,114 @@ No
 
 <script>
 
-let deferredPrompt;
+const installBtn =
+document.getElementById("installBtn");
+
+let deferredPrompt = null;
 
 window.addEventListener(
-'beforeinstallprompt',
-(e)=>{
-e.preventDefault();
-deferredPrompt=e;
-installBtn.style.display='block';
+"beforeinstallprompt",
+(event)=>{
+
+event.preventDefault();
+
+deferredPrompt = event;
+
 });
 
 installBtn.addEventListener(
-'click',
-async ()=>{
-if(!deferredPrompt)return;
+"click",
+async()=>{
+
+if(deferredPrompt){
+
 deferredPrompt.prompt();
+
+}else{
+
+alert(
+"To install the app:\n\nChrome Menu → Add to Home Screen"
+);
+
+}
+
 });
 
-const ring = document.getElementById("progressRing");
-const timerText = document.getElementById("timerText");
+const ring =
+document.getElementById("progressRing");
+
+const timerText =
+document.getElementById("timerText");
 
 const radius = 85;
 const circumference = 2*Math.PI*radius;
 
-ring.style.strokeDasharray = circumference;
+ring.style.strokeDasharray =
+circumference;
 
-let settings = JSON.parse(
-localStorage.getItem("loopTimerSettings")
-)||{
+let settings =
+JSON.parse(
+localStorage.getItem(
+"loopTimerSettings"
+)
+) || {
+
 duration:5,
 sound:true,
 vibration:true,
 halfway:true,
 countdown:true
+
 };
 
 function loadSettings(){
 
-durationInput.value=settings.duration;
+durationInput.value =
+settings.duration;
 
-soundToggle.checked=settings.sound;
-vibrationToggle.checked=settings.vibration;
-halfwayToggle.checked=settings.halfway;
-countdownToggle.checked=settings.countdown;
+soundToggle.checked =
+settings.sound;
+
+vibrationToggle.checked =
+settings.vibration;
+
+halfwayToggle.checked =
+settings.halfway;
+
+countdownToggle.checked =
+settings.countdown;
+
 }
 
 loadSettings();
 
-let DURATION=settings.duration*60;
-let remaining=DURATION;
-let running=false;
-let interval=null;
-let lap=1;
+let DURATION =
+settings.duration * 60;
+
+let remaining =
+DURATION;
+
+let running = false;
+let interval = null;
+let lap = 1;
 
 function beep(freq,duration){
 
-if(!settings.sound)return;
+if(!settings.sound) return;
 
 const ctx =
 new(window.AudioContext||
 window.webkitAudioContext)();
 
-const osc=ctx.createOscillator();
-const gain=ctx.createGain();
+const osc =
+ctx.createOscillator();
 
-osc.frequency.value=freq;
+const gain =
+ctx.createGain();
+
+osc.frequency.value =
+freq;
+
 osc.connect(gain);
 gain.connect(ctx.destination);
 
@@ -390,12 +430,15 @@ osc.start();
 
 gain.gain.exponentialRampToValueAtTime(
 0.0001,
-ctx.currentTime + duration/1000
+ctx.currentTime +
+duration/1000
 );
 
 osc.stop(
-ctx.currentTime + duration/1000
+ctx.currentTime +
+duration/1000
 );
+
 }
 
 function vibrate(pattern){
@@ -406,6 +449,7 @@ navigator.vibrate
 ){
 navigator.vibrate(pattern);
 }
+
 }
 
 function doubleDing(){
@@ -413,173 +457,251 @@ function doubleDing(){
 beep(900,180);
 
 setTimeout(()=>{
+
 beep(1200,180);
+
 },250);
+
 }
 
 function updateDisplay(){
 
-let m=Math.floor(remaining/60);
-let s=remaining%60;
+let m =
+Math.floor(remaining/60);
 
-timerText.textContent=
+let s =
+remaining%60;
+
+timerText.textContent =
 String(m).padStart(2,"0")
-+":"
-+String(s).padStart(2,"0");
++
+":"
++
+String(s).padStart(2,"0");
 
 let percent =
-remaining/DURATION;
+remaining /
+DURATION;
 
-ring.style.strokeDashoffset=
-circumference*(1-percent);
+ring.style.strokeDashoffset =
+circumference *
+(1-percent);
 
-if(remaining>30){
+const halfway =
+Math.floor(DURATION/2);
 
-ring.style.stroke="#22c55e";
+if(remaining > halfway){
 
-timerText.classList.remove(
-"redPulse"
-);
-
-}else if(remaining>10){
-
-ring.style.stroke="#f59e0b";
+ring.style.stroke =
+"#22c55e";
 
 timerText.classList.remove(
 "redPulse"
 );
 
-}else{
+}
+else if(remaining > 10){
 
-ring.style.stroke="#ef4444";
+ring.style.stroke =
+"#f59e0b";
+
+timerText.classList.remove(
+"redPulse"
+);
+
+}
+else{
+
+ring.style.stroke =
+"#ef4444";
 
 timerText.classList.add(
 "redPulse"
 );
+
 }
 
 document.getElementById(
 "lapText"
-).textContent=
-"Lap "+lap;
+).textContent =
+"Lap " + lap;
 
 document.getElementById(
 "totalTime"
-).textContent=
+).textContent =
 "Total Time: "
-+((lap-1)*settings.duration)
-+" min";
++
+((lap-1)
+*
+settings.duration)
++
+" min";
+
 }
 
 function tick(){
 
 remaining--;
 
-let halfway=
-Math.floor(DURATION/2);
+const halfway =
+Math.floor(
+DURATION/2
+);
 
 if(
-remaining===halfway &&
+remaining === halfway &&
 settings.halfway
 ){
+
 beep(1000,300);
+
 vibrate(200);
+
 }
 
 if(
 settings.countdown &&
-[3,2,1].includes(remaining)
+[3,2,1].includes(
+remaining
+)
 ){
+
 beep(500,300);
-vibrate(100);
+
+vibrate(120);
+
 }
 
-if(remaining<=0){
+if(remaining <= 0){
 
 doubleDing();
 
-vibrate([150,100,150]);
+vibrate(
+[150,100,150]
+);
 
 lap++;
 
-remaining=DURATION;
+remaining =
+DURATION;
+
 }
 
 updateDisplay();
+
 }
 
 async function startTimer(){
 
-if(running)return;
+if(running) return;
 
 doubleDing();
 
-running=true;
+running = true;
 
-if("wakeLock" in navigator){
+if(
+"wakeLock"
+in navigator
+){
+
 try{
-await navigator.wakeLock.request(
+
+await navigator
+.wakeLock
+.request(
 "screen"
 );
-}catch(e){}
+
+}
+catch(err){
+
 }
 
-interval=setInterval(
+}
+
+interval =
+setInterval(
 tick,
 1000
 );
+
 }
 
 function pauseTimer(){
 
-running=false;
+running = false;
 
-clearInterval(interval);
+clearInterval(
+interval
+);
+
 }
 
 function showEndPopup(){
-endPopup.style.display="flex";
+
+endPopup.style.display =
+"flex";
+
 }
 
 function closeEndPopup(){
-endPopup.style.display="none";
+
+endPopup.style.display =
+"none";
+
 }
 
 function confirmEnd(){
 
 pauseTimer();
 
-lap=1;
+lap = 1;
 
-remaining=DURATION;
+remaining =
+DURATION;
 
 updateDisplay();
 
 closeEndPopup();
+
 }
 
 function openSettings(){
 
 loadSettings();
 
-settingsPanel.style.display="flex";
+settingsPanel.style.display =
+"flex";
+
 }
 
 function closeSettings(){
 
-settingsPanel.style.display="none";
+settingsPanel.style.display =
+"none";
+
 }
 
 function saveSettings(){
 
-settings={
+settings = {
+
 duration:Number(
 durationInput.value
 ),
-sound:soundToggle.checked,
-vibration:vibrationToggle.checked,
-halfway:halfwayToggle.checked,
-countdown:countdownToggle.checked
+
+sound:
+soundToggle.checked,
+
+vibration:
+vibrationToggle.checked,
+
+halfway:
+halfwayToggle.checked,
+
+countdown:
+countdownToggle.checked
+
 };
 
 localStorage.setItem(
@@ -587,24 +709,33 @@ localStorage.setItem(
 JSON.stringify(settings)
 );
 
-DURATION=
-settings.duration*60;
+DURATION =
+settings.duration * 60;
 
-remaining=DURATION;
+remaining =
+DURATION;
 
-lap=1;
+lap = 1;
 
 updateDisplay();
 
 closeSettings();
+
 }
 
 updateDisplay();
 
-if('serviceWorker' in navigator){
-navigator.serviceWorker.register(
+if(
+'serviceWorker'
+in navigator
+){
+
+navigator
+.serviceWorker
+.register(
 'service-worker.js'
 );
+
 }
 
 </script>
